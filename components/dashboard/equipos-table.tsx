@@ -91,7 +91,7 @@ export function EquiposTable({ equipos, isAdmin }: EquiposTableProps) {
       "Forma de Adquisicion",
       "Responsable",
       "Numero de Inventario",
-      "Ano",
+      "Año",
     ]
 
     const rows = filteredEquipos.map((e) => [
@@ -185,7 +185,7 @@ export function EquiposTable({ equipos, isAdmin }: EquiposTableProps) {
                 <TableHead className="hidden xl:table-cell">Adquisicion</TableHead>
                 <TableHead className="hidden lg:table-cell">Responsable</TableHead>
                 <TableHead className="hidden md:table-cell">No. Inventario</TableHead>
-                <TableHead className="hidden sm:table-cell">Ano</TableHead>
+                <TableHead className="hidden sm:table-cell">Año</TableHead>
                 {isAdmin && <TableHead className="w-[100px]">Acciones</TableHead>}
               </TableRow>
             </TableHeader>

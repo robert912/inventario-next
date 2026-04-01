@@ -165,7 +165,7 @@ export function EditEquipoDialog({ equipo, open, onOpenChange }: EditEquipoDialo
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-anio">Ano de Adquisicion</Label>
+              <Label htmlFor="edit-anio">Año de Adquisicion</Label>
               <Input
                 id="edit-anio"
                 name="anio"

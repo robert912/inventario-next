@@ -139,7 +139,7 @@ export function AddEquipoDialog({ userId }: AddEquipoDialogProps) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="anio">Ano de Adquisicion</Label>
+              <Label htmlFor="anio">Año de Adquisicion</Label>
               <Input
                 id="anio"
                 name="anio"
