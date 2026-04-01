@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { signInWithGoogle, devBypassLogin } from "@/app/auth/actions"
+import { signInWithGoogle } from "@/app/auth/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Monitor, Loader2, ArrowRight } from "lucide-react"
@@ -17,11 +17,6 @@ export function LoginForm() {
     } catch {
       setIsLoading(false)
     }
-  }
-
-  async function handleDevBypass() {
-    setIsDevLoading(true)
-    await devBypassLogin()
   }
 
   return (
@@ -68,33 +63,7 @@ export function LoginForm() {
           )}
           {isLoading ? "Iniciando sesion..." : "Continuar con Google"}
         </Button>
-        
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">o</span>
-          </div>
-        </div>
 
-        <Button 
-          onClick={handleDevBypass}
-          variant="outline"
-          className="w-full gap-2 border-dashed border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-          size="lg"
-          disabled={isDevLoading}
-        >
-          {isDevLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <ArrowRight className="h-5 w-5" />
-          )}
-          {isDevLoading ? "Entrando..." : "Entrar sin login (temporal)"}
-        </Button>
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          Solo para desarrollo - remover en produccion
-        </p>
       </CardContent>
     </Card>
   )
