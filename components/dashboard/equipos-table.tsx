@@ -20,7 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Download, Pencil, Trash2 } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
+import { Search, Download, Pencil, Trash2, AlertTriangle, ShieldAlert, Info} from "lucide-react"
 import { EditEquipoDialog } from "./edit-equipo-dialog"
 import { DeleteEquipoDialog } from "./delete-equipo-dialog"
 import type { Equipo } from "@/lib/types"
@@ -59,6 +60,24 @@ export function EquiposTable({ equipos, isAdmin }: EquiposTableProps) {
   const [editingEquipo, setEditingEquipo] = useState<Equipo | null>(null)
   const [deletingEquipo, setDeletingEquipo] = useState<Equipo | null>(null)
 
+  const currentYear = new Date().getFullYear()
+
+  // Lógica de Alertas por Antigüedad (SOLO SI ESTÁ ACTIVO)
+  const getAlertaAntiguedad = (anio: number, estado: string) => {
+    if (estado !== "activo") return null; // No mostrar alerta si no está activo
+
+    const antiguedad = currentYear - anio
+    if (antiguedad >= 9) return { nivel: 'critico',icon: <ShieldAlert className="h-3 w-3" />,label: `${antiguedad} años`, tooltip: "Equipo en estado crítico. Reemplazo urgente recomendado.", color: "text-red-700 bg-red-50 border-red-200" }
+    if (antiguedad >= 7) return { nivel: 'advertencia', icon: <AlertTriangle className="h-3 w-3" />, label: `${antiguedad} años`, tooltip: "Equipo con alto riesgo de fallas. Planificar reemplazo.", color: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border text-orange-700 bg-orange-50 border-orange-200" }
+    if (antiguedad >= 5) return { nivel: 'aviso', icon: <Info className="h-3 w-3" />, label: `${antiguedad} años`, tooltip: "Equipo cercano al fin de vida útil. Revisión recomendada.", color: "text-yellow-700 bg-yellow-50 border-yellow-200" }
+    return null
+  }
+
+  // Contador: Solo cuenta equipos activos con 5+ años
+  const vidaUtilRiesgoCount = equipos.filter(
+    e => e.estado === "activo" && (currentYear - e.anio) >= 5
+  ).length
+
   const ubicaciones = useMemo(() => {
     const unique = [...new Set(equipos.map((e) => e.ubicacion))]
     return unique.sort()
@@ -91,7 +110,8 @@ export function EquiposTable({ equipos, isAdmin }: EquiposTableProps) {
       "Forma de Adquisicion",
       "Responsable",
       "Numero de Inventario",
-      "Año",
+      "Año de Adquisicion",
+      "Antiguedad (años)",
     ]
 
     const rows = filteredEquipos.map((e) => [
@@ -104,6 +124,7 @@ export function EquiposTable({ equipos, isAdmin }: EquiposTableProps) {
       e.responsable,
       e.numero_inventario,
       e.anio.toString(),
+      (currentYear - e.anio).toString(),
     ])
 
     const csvContent = [
@@ -126,9 +147,14 @@ export function EquiposTable({ equipos, isAdmin }: EquiposTableProps) {
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-lg">
-            {filteredEquipos.length} equipo{filteredEquipos.length !== 1 ? "s" : ""} encontrado{filteredEquipos.length !== 1 ? "s" : ""}
-          </CardTitle>
+          <div>
+            <CardTitle className="text-lg">
+              {filteredEquipos.length} equipo{filteredEquipos.length !== 1 ? "s" : ""} encontrado{filteredEquipos.length !== 1 ? "s" : ""}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground font-medium">
+              Vida útil en riesgo: <span className="text-orange-600 dark:text-orange-400">{vidaUtilRiesgoCount} equipos activos (5+ años)</span>
+            </p>
+          </div>
           <Button onClick={downloadCSV} variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
             Exportar CSV
@@ -182,66 +208,85 @@ export function EquiposTable({ equipos, isAdmin }: EquiposTableProps) {
                 <TableHead className="hidden md:table-cell">No. Serie</TableHead>
                 <TableHead className="hidden lg:table-cell">Ubicacion</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="hidden xl:table-cell">Adquisicion</TableHead>
                 <TableHead className="hidden lg:table-cell">Responsable</TableHead>
                 <TableHead className="hidden md:table-cell">No. Inventario</TableHead>
-                <TableHead className="hidden sm:table-cell">Año</TableHead>
+                <TableHead>Año Adq.</TableHead>
                 {isAdmin && <TableHead className="w-[100px]">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEquipos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 10 : 9} className="h-24 text-center">
+                  <TableCell colSpan={isAdmin ? 9 : 8} className="h-24 text-center">
                     No se encontraron equipos
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredEquipos.map((equipo) => (
-                  <TableRow key={equipo.id}>
-                    <TableCell className="font-medium">{equipo.nombre}</TableCell>
-                    <TableCell>{equipo.marca}</TableCell>
-                    <TableCell className="hidden md:table-cell font-mono text-sm">
-                      {equipo.numero_serie}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">{equipo.ubicacion}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={estadoColors[equipo.estado]}>
-                        {estadoLabels[equipo.estado]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell">
-                      {formaAdquisicionLabels[equipo.forma_adquisicion]}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">{equipo.responsable}</TableCell>
-                    <TableCell className="hidden md:table-cell font-mono text-sm">
-                      {equipo.numero_inventario}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">{equipo.anio}</TableCell>
-                    {isAdmin && (
+                filteredEquipos.map((equipo) => {
+                  const alerta = getAlertaAntiguedad(equipo.anio, equipo.estado);
+                  return (
+                    <TableRow key={equipo.id}>
+                      <TableCell className="font-medium">{equipo.nombre}</TableCell>
+                      <TableCell>{equipo.marca}</TableCell>
+                      <TableCell className="hidden md:table-cell font-mono text-sm">
+                        {equipo.numero_serie}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">{equipo.ubicacion}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditingEquipo(equipo)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setDeletingEquipo(equipo)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                            <span className="sr-only">Eliminar</span>
-                          </Button>
+                        <Badge variant="secondary" className={estadoColors[equipo.estado]}>
+                          {estadoLabels[equipo.estado]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">{equipo.responsable}</TableCell>
+                      <TableCell className="hidden md:table-cell font-mono text-sm">
+                        {equipo.numero_inventario}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className="font-medium">{equipo.anio}</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              {alerta && (
+                                <Badge className={`${alerta.color} text-[10px] px-1.5 py-0`}>
+                                  {alerta.icon}{alerta.label}
+                                </Badge>
+                              )}
+                            </TooltipTrigger>
+                            {alerta && (
+                              <TooltipContent side="top">
+                                <span className="text-xs font-medium">
+                                  {alerta.tooltip}
+                                </span>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
                         </div>
                       </TableCell>
-                    )}
-                  </TableRow>
-                ))
+                      {isAdmin && (
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingEquipo(equipo)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Editar</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeletingEquipo(equipo)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <span className="sr-only">Eliminar</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
